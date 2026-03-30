@@ -6,13 +6,16 @@ from fpdf import FPDF
 app = Flask(__name__)
 app.secret_key = "clave123"
 
+# LOGIN
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+# CONEXION
 def conectar():
     return sqlite3.connect("database.db")
 
+# USUARIO
 class Usuario(UserMixin):
     def __init__(self, id, nombre):
         self.id = id
@@ -29,6 +32,7 @@ def load_user(user_id):
         return Usuario(user[0], user[1])
     return None
 
+# CREAR TABLAS
 def crear_tablas():
     conn = conectar()
     cursor = conn.cursor()
@@ -56,6 +60,7 @@ def crear_tablas():
 
 crear_tablas()
 
+# RUTAS LOGIN
 @app.route('/')
 def inicio():
     return redirect('/login')
@@ -109,7 +114,7 @@ def logout():
     logout_user()
     return redirect('/login')
 
-# CRUD
+# CRUD PRODUCTOS
 
 @app.route('/productos')
 @login_required
@@ -173,6 +178,8 @@ def editar(id):
 
     return render_template('productos/form.html', producto=producto)
 
+# PDF BIEN HECHO
+
 @app.route('/reporte')
 @login_required
 def reporte():
@@ -186,13 +193,21 @@ def reporte():
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    for p in productos:
-        pdf.cell(200,10, txt=f"{p[1]} - {p[2]} - {p[3]}", ln=True)
+    # TITULO
+    pdf.cell(200,10, txt="REPORTE DE PRODUCTOS", ln=True)
+    pdf.ln(10)
+
+    if len(productos) == 0:
+        pdf.cell(200,10, txt="No hay productos registrados", ln=True)
+    else:
+        for p in productos:
+            texto = f"Nombre: {p[1]} | Precio: {p[2]} | Stock: {p[3]}"
+            pdf.cell(200,10, txt=texto, ln=True)
 
     pdf.output("reporte.pdf")
 
-    return "Reporte generado"
+    return "Reporte generado correctamente"
 
+# RUN FINAL
 if __name__ == '__main__':
     app.run(debug=True)
-    
